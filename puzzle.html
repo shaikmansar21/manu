@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>4x4 Image Puzzle</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding-top: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    #controls {
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    #imageUrl {
+      width: 260px;
+      padding: 6px;
+      margin-right: 6px;
+    }
+
+    #puzzle {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-template-rows: repeat(4, 100px);
+      gap: 2px;
+      background: #333;
+      padding: 2px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .tile {
+      width: 100px;
+      height: 100px;
+      background-size: 400px 400px; /* whole image size */
+      cursor: pointer;
+      box-sizing: border-box;
+      border: 1px solid #999;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .tile.selected {
+      outline: 3px solid #ff9800;
+      transform: scale(1.05);
+      box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    }
+
+    #message {
+      margin-top: 12px;
+      font-weight: bold;
+      color: #2e7d32;
+    }
+  </style>
+</head>
+<body>
+  <h1>4x4 Image Puzzle</h1>
+
+  <div id="controls">
+    <input
+      type="text"
+      id="imageUrl"
+      placeholder="Paste your image URL here"
+    />
+    <button id="loadImageBtn">Use Image</button>
+    <button id="shuffleBtn">Shuffle</button>
+  </div>
+
+  <div id="puzzle"></div>
+  <div id="message"></div>
+
+  <script>
+    const GRID_SIZE = 4;          // 4x4
+    const TILE_SIZE = 100;        // px
+    const puzzle = document.getElementById("puzzle");
+    const message = document.getElementById("message");
+    const imageUrlInput = document.getElementById("imageUrl");
+    const loadImageBtn = document.getElementById("loadImageBtn");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+
+    let tiles = [];               // current order of tile indices
+    let selectedTile = null;
+    let currentImageUrl =
+      https://i.postimg.cc/DfXPXxqf/20170428-215255.jpg // default image (you can change this)
+
+    function createTiles() {
+      puzzle.innerHTML = "";
+      tiles = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => i);
+
+      for (let pos = 0; pos < tiles.length; pos++) {
+        const tileIndex = tiles[pos];
+        const tile = document.createElement("div");
+        tile.classList.add("tile");
+        tile.dataset.index = tileIndex;
+
+        setTileBackground(tile, tileIndex);
+        tile.addEventListener("click", onTileClick);
+
+        puzzle.appendChild(tile);
+      }
+    }
+
+    function setTileBackground(tile, index) {
+      const col = index % GRID_SIZE;
+      const row = Math.floor(index / GRID_SIZE);
+
+      tile.style.backgroundImage = `url('${currentImageUrl}')`;
+      tile.style.backgroundPosition = `-${col * TILE_SIZE}px -${row * TILE_SIZE}px`;
+    }
+
+    function shuffleTiles() {
+      message.textContent = "";
+      // Fisher–Yates shuffle
+      for (let i = tiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+      }
+
+      const tileElements = Array.from(puzzle.children);
+      tileElements.forEach((tile, pos) => {
+        const index = tiles[pos];
+        tile.dataset.index = index;
+        setTileBackground(tile, index);
+        tile.classList.remove("selected");
+      });
+      selectedTile = null;
+    }
+
+    function onTileClick(e) {
+      const tile = e.currentTarget;
+
+      if (!selectedTile) {
+        selectedTile = tile;
+        tile.classList.add("selected");
+      } else if (selectedTile === tile) {
+        tile.classList.remove("selected");
+        selectedTile = null;
+      } else {
+        // Swap data-index between tiles
+        const index1 = selectedTile.dataset.index;
+        const index2 = tile.dataset.index;
+
+        selectedTile.dataset.index = index2;
+        tile.dataset.index = index1;
+
+        setTileBackground(selectedTile, index2);
+        setTileBackground(tile, index1);
+
+        selectedTile.classList.remove("selected");
+        selectedTile = null;
+
+        updateTilesArray();
+        checkSolved();
+      }
+    }
+
+    function updateTilesArray() {
+      const tileElements = Array.from(puzzle.children);
+      tiles = tileElements.map(tile => Number(tile.dataset.index));
+    }
+
+    function checkSolved() {
+      const solved = tiles.every((index, position) => index === position);
+      if (solved) {
+        message.textContent = "🎉 Puzzle solved! Great job!";
+      }
+    }
+
+    loadImageBtn.addEventListener("click", () => {
+      const url = imageUrlInput.value.trim();
+      if (!url) return alert("Please paste an image URL first.");
+      currentImageUrl = url;
+      createTiles();
+      shuffleTiles();
+    });
+
+    shuffleBtn.addEventListener("click", shuffleTiles);
+
+    // Initial setup
+    createTiles();
+    shuffleTiles();
+  </script>
+</body>
+</html>
